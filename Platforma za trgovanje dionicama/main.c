@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Dionica.h"
-
+/*Organizacija izvornog koda*/
 int main()
 {
 	FILE* datoteka = fopen("dionice.txt", "w");
@@ -15,7 +15,7 @@ int main()
 
 	struct {
 		char* naziv;
-		float cijena;
+		float cijena; // 1. Realni tip podatka
 	} ulazne_dionice[] = {
 		{"AAPL", 172.46},
 		{"MSFT", 321.50},
@@ -40,7 +40,7 @@ int main()
 	};
 
 	int broj_dionica = sizeof(ulazne_dionice) / sizeof(ulazne_dionice[0]);
-	Dionica** dionice = malloc(broj_dionica * sizeof(Dionica*));
+	Dionica** dionice = malloc(broj_dionica * sizeof(Dionica*)); 
 
 	if (dionice == NULL)
 	{
