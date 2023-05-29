@@ -124,10 +124,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dionica.c" />
+    <ClCompile Include="Korisnik.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="Portfelj.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dionica.h" />
+    <ClInclude Include="Korisnik.h" />
+    <ClInclude Include="Portfelj.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

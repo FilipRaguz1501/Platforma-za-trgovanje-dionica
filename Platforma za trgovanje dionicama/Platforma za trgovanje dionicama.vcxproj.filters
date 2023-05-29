@@ -21,9 +21,21 @@
     <ClCompile Include="main.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Portfelj.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Korisnik.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dionica.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Portfelj.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Korisnik.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

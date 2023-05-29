@@ -12,7 +12,7 @@ Dionica* nova_dionica(char* naziv, float cijena)
 		printf("Greska pri alociranju memorije.\n");
 		exit(1);
 	}
-	strncpy(d->naziv, naziv, sizeof(d->naziv) - 1);
+	snprintf(d->naziv, sizeof(d->naziv), "%s", naziv);
 	d->cijena = cijena;
 	d->datumKupnje = (unsigned int)time(NULL);
 
@@ -32,7 +32,7 @@ void pohrani_dionicu_u_datoteku(FILE* datoteka, Dionica* d)
 		exit(1);
 	}
 
-	fprintf(datoteka, "%s %.2f %lu\n", d->naziv, d->cijena, d->datumKupnje);
+	fprintf(datoteka, "%s %.2f %u\n", d->naziv, d->cijena, d->datumKupnje);
 }
 
 
@@ -51,16 +51,20 @@ Dionica* citaj_dionicu_iz_datoteke(FILE* datoteka)
 		exit(1);
 	}
 
-	size_t procitano = fread(d, sizeof(Dionica), 1, datoteka);
-	if (procitano != 1)
+	int procitano = fscanf(datoteka, "%s %f", d->naziv, &(d->cijena));
+	if (procitano != 2) // provjeravamo jesmo li uspješno pročitali oba polja
 	{
 		printf("Greska pri citanju dionice iz datoteke.\n");
 		free(d);
 		return NULL;
 	}
 
+	// Postavimo datumKupnje na trenutni datum
+	d->datumKupnje = (unsigned int)time(NULL);
+
 	return d;
 }
+
 
 
 // funkcija za sortiranje po imenu
@@ -117,7 +121,7 @@ Dionica* binarno_pretrazi_dionicu(Dionica** dionice, int broj_dionica, char* naz
 		int sredina = lijevo + (desno - lijevo) / 2;
 
 		// Provjeri je li naziv u sredini
-		int rezultat = strncmp(dionice[sredina]->naziv, naziv, strlen(naziv));
+		int rezultat = strcmp(dionice[sredina]->naziv, naziv);
 
 		if (rezultat == 0)
 			return dionice[sredina];
@@ -125,9 +129,11 @@ Dionica* binarno_pretrazi_dionicu(Dionica** dionice, int broj_dionica, char* naz
 			lijevo = sredina + 1;
 		else
 			desno = sredina - 1;
-	}
 
-	// Ako nismo našli element, vratiti NULL
+
+		// Ako nismo našli element, vratiti NULL
+
+	}
 	return NULL;
 }
 
@@ -140,4 +146,3 @@ void zamijeni_dionice(Dionica** d1, Dionica** d2)
 	*d1 = *d2;
 	*d2 = temp;
 }
-

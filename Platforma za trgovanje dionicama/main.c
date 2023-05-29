@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "Dionica.h"
+#include "Portfelj.h"
+#include "Korisnik.h"
 /*Organizacija izvornog koda*/
 int main()
 {
@@ -40,14 +42,14 @@ int main()
 	};
 
 	int broj_dionica = sizeof(ulazne_dionice) / sizeof(ulazne_dionice[0]);
-	Dionica** dionice = malloc(broj_dionica * sizeof(Dionica*)); 
+	Dionica** dionice = malloc(broj_dionica * sizeof(Dionica*));
 
 	if (dionice == NULL)
 	{
 		printf("Greska pri alociranju memorije za dionice.\n");
 		fclose(datoteka);
 		return 1;
-	}
+	};
 
 	for (int i = 0; i < broj_dionica; ++i)
 	{
@@ -71,18 +73,11 @@ int main()
 
 
 
-	// Sort by imenu
-	sortiraj_po_imenu(dionice, broj_dionica);
-	printf("Sortirano po imenu:\n");
-	for (int i = 0; i < broj_dionica; ++i)
-	{
-		ispis_dionice(dionice[i]);
-	}
-	printf("\n");
-
-	
 
 
+
+
+/*
 	// Sort by cijeni
 	sortiraj_po_cijeni(dionice, broj_dionica);
 	printf("Sortirano po cijeni:\n");
@@ -92,14 +87,17 @@ int main()
 	}
 	printf("\n");
 
-	// Sortiraj po datumu kupnje
-	sortiraj_po_datumu_kupnje(dionice, broj_dionica);
-	printf("Sortirano po datumu kupnje:\n");
+	// Sort by imenu
+	sortiraj_po_imenu(dionice, broj_dionica);
+	printf("Sortirano po imenu:\n");
 	for (int i = 0; i < broj_dionica; ++i)
 	{
 		ispis_dionice(dionice[i]);
 	}
 	printf("\n");
+
+
+
 
 	// binarno pretrazivanje
 	char* trazena_dionica = "AAPL";
@@ -114,6 +112,17 @@ int main()
 		printf("Dionica %s nije pronadena.\n", trazena_dionica);
 	}
 
+	// Sortiraj po datumu kupnje
+	sortiraj_po_datumu_kupnje(dionice, broj_dionica);
+	printf("Sortirano po datumu kupnje:\n");
+	for (int i = 0; i < broj_dionica; ++i)
+	{
+		ispis_dionice(dionice[i]);
+	}
+	printf("\n");
+
+
+
 	// oslobađanje
 	for (int i = 0; i < broj_dionica; ++i)
 	{
@@ -121,6 +130,59 @@ int main()
 	}
 	free(dionice);
 
+
+	Portfelj* portfelj = kreiraj_portfelj();
+
+	Dionica* dionica1 = nova_dionica("AAPL", 172.46);
+	Dionica* dionica2 = nova_dionica("MSFT", 321.50);
+	Dionica* dionica3 = nova_dionica("AMZN", 116.08);
+
+	dodaj_dionicu(portfelj, dionica1);
+	dodaj_dionicu(portfelj, dionica2);
+	dodaj_dionicu(portfelj, dionica3);
+
+	ispis_portfelja(portfelj);
+	sortiraj_portfelj_po_imenu(portfelj);
+	ispis_portfelja(portfelj);
+	char* naziv_dionice = "AAPL";
+
+	sortiraj_portfelj_po_imenu(portfelj);
+	ispis_portfelja(portfelj);
+	sortiraj_portfelj_po_cijeni(portfelj);
+	ispis_portfelja(portfelj); */
+
+	// Stvori novog korisnika
+		Korisnik * korisnik = stvori_korisnik("JohnDoe", "123456", 1000.0);
+
+		// Uplati određeni iznos na korisnikov račun
+		polog(korisnik, 500.0);  // Novi proračun: 1500.00
+
+		// Stvori novu dionicu i dodaj je u korisnikov portfelj
+		Dionica* dionica1 = nova_dionica("Apple", 150.0);
+		dodaj_dionicu(korisnik->portfelj, dionica1);
+
+		// Stvori još jednu dionicu i dodaj je u korisnikov portfelj
+		Dionica* dionica2 = nova_dionica("Microsoft", 200.0);
+		dodaj_dionicu(korisnik->portfelj, dionica2);
+
+		// Prikaži korisnikov portfelj
+		printf("\nPrije sortiranja:\n");
+		provjeri_portfelj(korisnik);  // Prikazat će dionice "Apple" i "Microsoft"
+
+		// Sortiraj korisnikov portfelj po imenu
+		sortiraj_portfelj(korisnik);
+
+		// Prikaži sortirani portfelj
+		printf("\nPoslije sortiranja:\n");
+		provjeri_portfelj(korisnik);  // Prikazat će dionice "Apple" i "Microsoft" sortirane po redu
+
+		// Pretraži korisnikov portfelj za određenom dionicom
+		pretrazi_portfelj(korisnik, "Apple");  // Prikazat će dionicu "Apple"
+
+		// Očisti
+		oslobodi_portfelj(korisnik->portfelj);
+		free(korisnik);
+
+
 	return 0;
 }
-
