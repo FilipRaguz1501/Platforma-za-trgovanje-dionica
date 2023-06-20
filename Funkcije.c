@@ -1,315 +1,231 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include "Funkcije.h"
-#define MAX 100000
 
-Dionica* novaDionica(const char* naziv, float cijena) {
-	Dionica* dionica = (Dionica*)malloc(sizeof(Dionica)); //14. Koristiti funkcije malloc(), calloc(), realloc(), free() – neku od njih, ako ne i sve.
-	if (dionica == NULL) { //11. Zaštita parametara kod svih funkcija.
-
-		perror("Neuspjela alokacija memorije za dionicu"); //19. Upravljati s pogreškama, errno, perror(), strerror(), feof(), ferror() – neku od njih ako ne sve.
-
-		return NULL;
-	}
-	strncpy(dionica->naziv, naziv, sizeof(dionica->naziv) - 1);
-	dionica->naziv[sizeof(dionica->naziv) - 1] = '\0';
-	dionica->cijena = cijena;
-	return dionica;
+Korisnik* kreirajKorisnika(const char* korisnickoIme, const char* lozinka, double budzet) {
+    Korisnik* noviKorisnik = (Korisnik*)malloc(sizeof(Korisnik));
+    if (noviKorisnik == NULL) {
+        perror("Greska prilikom alociranja memorije za novog korisnika");
+        return NULL;
+    }
+    strcpy(noviKorisnik->korisnickoIme, korisnickoIme);
+    strcpy(noviKorisnik->lozinka, lozinka);
+    noviKorisnik->budzet = budzet;
+    noviKorisnik->portfelj = kreirajPortfelj();
+    if (noviKorisnik->portfelj == NULL) {
+        free(noviKorisnik);
+        return NULL;
+    }
+    return noviKorisnik;
 }
+void obrisiKorisnika(Korisnik* korisnik) {
+    obrisiPortfelj(korisnik->portfelj); // Brisanje portfelja korisnika
+    free(korisnik);
+}
+
+
+Dionica* kreirajDionicu(const char* naziv, double cijena) {
+    Dionica* novaDionica = (Dionica*)malloc(sizeof(Dionica));
+    if (novaDionica == NULL) {
+        perror("Greska prilikom alociranja memorije za novu dionicu");
+        return NULL;
+    }
+    strcpy(novaDionica->naziv, naziv);
+    novaDionica->cijena = cijena;
+    return novaDionica;
+}
+void obrisiDionicu(Dionica* dionica) {
+    free(dionica);
+}
+
 
 Portfelj* kreirajPortfelj() {
-	Portfelj* noviPortfelj = (Portfelj*)malloc(sizeof(Portfelj));
-	if (noviPortfelj == NULL) {
-		fprintf(stderr, "Neuspjelo alociranje memorije za portfelj\n");
-		return NULL;
-	}
-	noviPortfelj->dionice = NULL;  // Inicijalno postavite na NULL
-	noviPortfelj->brojDionica = 0; // Nema dionica u novom portfelju
-	return noviPortfelj;
+    Portfelj* noviPortfelj = (Portfelj*)malloc(sizeof(Portfelj));
+    noviPortfelj->dionice = malloc(10 * sizeof(Dionica)); // Inicijalno postavimo kapacitet na 10
+    noviPortfelj->brojDionica = 0;
+    noviPortfelj->kapacitet = 10;  // Dodajemo kapacitet u strukturu Portfelj
+    return noviPortfelj;
 }
 
-void oslobodiPortfelj(Portfelj* portfelj) {
-	if (portfelj == NULL) {
-		fprintf(stderr, "Pogreška: Pokazivaè na portfelj je NULL\n");
-		return;
-	}
-
-	// Oslobodite memoriju za sve dionice
-	for (int i = 0; i < portfelj->brojDionica; i++) {
-		oslobodiDionicu(portfelj->dionice[i]);
-		portfelj->dionice[i] = NULL;  // Postavite pokazivaè na NULL da sprijeèite double free
-	}
-
-	// Oslobodite memoriju za niz pokazivaèa na dionice
-	free(portfelj->dionice);
-	portfelj->dionice = NULL;  // Postavite pokazivaè na NULL da sprijeèite double free
-
-	// Oslobodite memoriju za sam portfelj
-	free(portfelj); //15. Sigurno brisanje memorije koja je dinamièki zauzeta, anuliranje memorijskog prostora, provjera
-//pokazivaèa kako se ne bi dogodila pogreška double free() i anuliranje svih pokazivaèa koji su bili
-//usmjereni na memorijski prostor koji se dinamièki zauzeo.
+void obrisiPortfelj(Portfelj* portfelj) {
+    free(portfelj->dionice);
+    free(portfelj);
 }
 
-void oslobodiDionicu(Dionica* dionica) {
-	if (dionica == NULL) {
-		fprintf(stderr, "Pogreška: Pokazivaè na dionicu je NULL\n");
-		return;
-	}
+bool provjeri_bazu_podataka(FILE* datoteka, const char* korisnicko_ime, const char* lozinka) {
+    rewind(datoteka);  // Vratimo se na pocetak datoteke
+    if (ferror(datoteka)) {
+        perror("Greska prilikom vracanja na pocetak datoteke");
+        return false;
+    }
+    char ime[50];
+    char zaporka[50];
+    
+    while (fscanf(datoteka, "%s %s\n", ime, zaporka) != EOF) {
+        if (strcmp(ime, korisnicko_ime) == 0 && strcmp(zaporka, lozinka) == 0) {
+            return true;
+        }
+    }
 
-	//free(dionica->naziv);
-	//dionica->naziv = NULL;  // Postavite pokazivaè na NULL da sprijeèite double free
-
-	free(dionica);
-}
-
-int dodaj_dionicu(Portfelj* portfelj, Dionica* novaDionica) {
-	// Provjera da li je nova dionica veæ u portfelju
-	for (int i = 0; i < portfelj->brojDionica; ++i) {
-		if (strcmp(portfelj->dionice[i]->naziv, novaDionica->naziv) == 0) {
-			// Ako dionica veæ postoji, ažuriraj broj jedinica
-			portfelj->dionice[i]->brojJedinica += novaDionica->brojJedinica;
-			return 0;
-		}
-	}
-
-	// Poveæanje broja dionica
-	portfelj->brojDionica++;
-
-	// Realokacija memorije za niz pokazivaèa na dionice
-	portfelj->dionice = realloc(portfelj->dionice, portfelj->brojDionica * sizeof(Dionica*));
-
-	// Provjera da li je realokacija uspjela
-	if (portfelj->dionice == NULL) {
-		fprintf(stderr, "Pogreška pri realokaciji memorije.\n");
-		return -1;
-	}
-
-	// Dodavanje nove dionice u niz pokazivaèa
-	portfelj->dionice[portfelj->brojDionica - 1] = novaDionica;
-
-	return 0;  // Uspješno dodana dionica
-}
-
-int ukloni_dionicu(Portfelj* portfelj, char* naziv) {
-	int index = -1;
-
-	// Provjerava da li je dionica u portfelju
-	for (int i = 0; i < portfelj->brojDionica; ++i) {
-		if (strcmp(portfelj->dionice[i]->naziv, naziv) == 0) {
-			index = i;
-			break;
-		}
-	}
-
-	// Ako dionica nije pronaðena
-	if (index == -1) {
-		fprintf(stderr, "Pogreška: Dionica s nazivom '%s' ne postoji u portfelju.\n", naziv);
-		return -1;
-	}
-
-	// Oslobaðanje memorije za dionicu koja se uklanja
-	oslobodiDionicu(portfelj->dionice[index]);
-
-	// Pomak svih dionica za jedno mjesto unazad
-	for (int i = index; i < portfelj->brojDionica - 1; ++i) {
-		portfelj->dionice[i] = portfelj->dionice[i + 1];
-	}
-
-	// Smanjivanje broja dionica u portfelju
-	portfelj->brojDionica--;
-
-	// Realokacija memorije za niz pokazivaèa na dionice
-	portfelj->dionice = realloc(portfelj->dionice, portfelj->brojDionica * sizeof(Dionica*));
-
-	if (portfelj->dionice == NULL && portfelj->brojDionica > 0) {
-		fprintf(stderr, "Pogreška pri realokaciji memorije.\n");
-		return -1;
-	}
-
-	return 0;  // Uspješno uklonjena dionica
-}
-
-void izracunaj_vrijednost_portfelja(Portfelj* portfelj) {
-	// Provjeriti je li portfelj prazan
-	if (portfelj->brojDionica == 0) {
-		printf("Nema dionica u portfelju.\n");
-		return;
-	}
-
-	// Izraèunati ukupnu vrijednost portfelja
-	double ukupna_vrijednost = 0.0;
-	for (int i = 0; i < portfelj->brojDionica; i++) {
-		ukupna_vrijednost += portfelj->dionice[i]->cijena * portfelj->dionice[i]->brojJedinica; // prokmjena .cijena u ->cijena
-	}
-
-	printf("Ukupna vrijednost portfelja je: %.2f\n", ukupna_vrijednost);
-}
-
-Korisnik* kreirajKorisnika(char* ime, char* lozinka, double polog) {
-	Korisnik* noviKorisnik = (Korisnik*)malloc(sizeof(Korisnik));
-	if (noviKorisnik == NULL) {
-		printf("Greska pri alociranju memorije za novog korisnika.\n");
-		return NULL;
-	}
-
-	strcpy(noviKorisnik->ime, ime);
-	strcpy(noviKorisnik->lozinka, lozinka);
-	noviKorisnik->budzet = polog;
-
-	return noviKorisnik;
+    return false;
 }
 
 
-void dodajKorisnikaUDatoteku(Korisnik* korisnik) {
-	FILE* datoteka = fopen("korisnici.txt", "a"); //16. Datoteke, koristiti tekstualnu ili binarnu, provjera pokazivaèa i zatvaranje datoteke
-	if (datoteka == NULL) {
-		printf("Greska pri otvaranju datoteke.\n");
-		return;
-	}
+Korisnik* registracija(FILE* datoteka, int brojKorisnika, Korisnik* korisnici) {
+    char korisnicko_ime[50];
+    char lozinka[50];
+    
+    printf("\nUnesite korisnicko ime: ");
+    scanf("%s", korisnicko_ime);
+    printf("\nUnesite lozinku: ");
+    scanf("%s", lozinka);
 
-	// Zapisivanje podataka u datoteku
-	fprintf(datoteka, "Korisnik: %s, %s, %.2lf\n", korisnik->ime, korisnik->lozinka, korisnik->budzet);
-
-	// Zatvaranje datoteke
-	if (fclose(datoteka) != 0) {
-		printf("Greska pri zatvaranju datoteke.\n");
-	}
+    if (provjeri_bazu_podataka(datoteka, korisnicko_ime, lozinka)) {
+        printf("Korisnik sa ovim korisnickim imenom i lozinkom vec postoji.\n");
+        return NULL;
+    } else {
+        Korisnik* noviKorisnik = kreirajKorisnika(korisnicko_ime, lozinka, 0.0);
+        fseek(datoteka, 0, SEEK_END); // Pomaknemo se na kraj datoteke
+        fprintf(datoteka, "%s %s\n", korisnicko_ime, lozinka);
+        korisnici[brojKorisnika++] = *noviKorisnik;
+        return noviKorisnik;
+    }
+    
 }
 
-int provjeriKorisnika(const char* ime, const char* lozinka) {
-	FILE* datoteka = fopen("korisnici.txt", "r");
-	if (datoteka == NULL) {
-		perror("Greska pri otvaranju datoteke");
-		return -1;
-	}
+Korisnik* prijava(FILE* datoteka, int brojKorisnika, Korisnik* korisnici) {
+    char korisnicko_ime[50];
+    char lozinka[50];
+    
+    printf("\nUnesite korisnicko ime: ");
+    scanf("%s", korisnicko_ime);
+    printf("\nUnesite lozinku: ");
+    scanf("%s", lozinka);
 
-	fseek(datoteka, 0, SEEK_END);
-	long velicina = ftell(datoteka); //17. Koristiti funkcije fseek(), ftell(), rewind(), ovisno o potrebi – neku od njih ako ne sve.
-	rewind(datoteka);
-
-	if (velicina == 0) {
-		printf("Nema registriranih korisnika.\n");
-		return 0;
-	}
-
-	char korisnik[256], procitano_ime[256], procitana_lozinka[256];
-	while (fgets(korisnik, sizeof(korisnik), datoteka) != NULL) {
-		sscanf(korisnik, "%s %s", procitano_ime, procitana_lozinka);
-		if (strcmp(procitano_ime, ime) == 0 && strcmp(procitana_lozinka, lozinka) == 0) {
-			printf("Korisnik je uspjesno prijavljen.\n");
-			return 1;
-		}
-	}
-
-	printf("Korisnik nije pronadjen ili je lozinka netocna.\n");
-	return 0;
-}
-int dodajNovacKorisniku(const char* ime, double iznos) {
-	if (iznos > MAX) {
-		printf("Ne možete dodati više od %d u korisnikov budžet.\n", MAX);
-		return -1;
-	}
-
-
-	FILE* staraDatoteka = fopen("korisnici.txt", "r");
-	if (staraDatoteka == NULL) {
-		perror("Greška pri otvaranju datoteke korisnici.txt");
-		return -1;
-	}
-
-	FILE* novaDatoteka = fopen("novi_korisnici.txt", "w");
-	if (novaDatoteka == NULL) {
-		perror("Greška pri otvaranju datoteke novi_korisnici.txt");
-		return -1;
-	}
-
-	char linija[256];
-	while (fgets(linija, sizeof(linija), staraDatoteka) != NULL) {
-		char korisnik[256];
-		double budzet;
-		sscanf(linija, "Korisnik: %s , lozinka, %lf", korisnik, &budzet);
-		if (strcmp(korisnik, ime) == 0) {
-			budzet += iznos;
-			fprintf(novaDatoteka, "Korisnik: %s , lozinka, %lf\n", korisnik, budzet);
-		}
-		else {
-			fputs(linija, novaDatoteka);
-		}
-	}
-
-	fclose(staraDatoteka);
-	fclose(novaDatoteka);
-
-	if (remove("korisnici.txt") == 0) {
-		if (rename("novi_korisnici.txt", "korisnici.txt") != 0) { //18. Koristiti funkcije remove(), rename(), po potrebi implementirati funkciju za kopiranje datoteka.
-			perror("Greška pri preimenovanju datoteke");
-			return -1;
-		}
-	}
-	else {
-		perror("Greška pri brisanju datoteke");
-		return -1;
-	}
-
-	return 0;
+    if (provjeri_bazu_podataka(datoteka, korisnicko_ime, lozinka)) {
+        
+        // Prolazimo kroz sve korisnike
+        for(int i = 0; i < brojKorisnika; i++) {
+            // Provjeravamo ima li korisnik isto korisnicko ime i lozinku
+            if(strcmp(korisnici[i].korisnickoIme, korisnicko_ime) == 0 &&
+               strcmp(korisnici[i].lozinka, lozinka) == 0) {
+                return &korisnici[i]; // Ako ima, vracamo tog korisnika
+            }
+        }
+    } else {
+        printf("\nKorisnicko ime ili lozinka su netocni.\n");
+    }
+    return NULL; // Ako prijava nije uspjela, vracamo NULL
 }
 
-Korisnik* registracija() {
-	char ime[50];
-	char lozinka[50];
-	double polog;
 
-	printf("Unesite ime: ");
-	scanf("%49s", ime);
-	printf("Unesite lozinku: ");
-	scanf("%49s", lozinka);
-	printf("Unesite polog: ");
-	scanf("%lf", &polog);
 
-	if (postojiKorisnik(ime)) {
-		printf("Korisnik vec postoji. Molimo prijavite se.\n");
-		return NULL;
-	}
-	else {
-		Korisnik* noviKorisnik = kreirajKorisnika(ime, lozinka, polog);
-		if (noviKorisnik != NULL) {
-			printf("Uspjesno ste se registrirali.\n");
-		}
-		return noviKorisnik;
-	}
+//2->
+bool kupiDionicu(Portfelj* portfelj, Dionica* dionica, int kolicina, double* budzet) {
+    if(*budzet < dionica->cijena * kolicina) {
+        printf("\nNemate dovoljno novca za kupnju ove dionice.\n");
+        return false;
+    }
+    for (int i = 0; i < portfelj->brojDionica; i++) {
+        if (strcmp(portfelj->dionice[i].naziv, dionica->naziv) == 0) {
+            portfelj->dionice[i].kolicina += kolicina;
+            *budzet -= dionica->cijena * kolicina;
+            printf("\nUspjesno ste kupili %d dionica %s.\n", kolicina, dionica->naziv);
+            return true;
+        }
+    }
+    if (portfelj->brojDionica >= portfelj->kapacitet) {
+        portfelj->kapacitet *= 2;
+        portfelj->dionice = realloc(portfelj->dionice, portfelj->kapacitet * sizeof(Dionica));
+    }
+    portfelj->dionice[portfelj->brojDionica] = *dionica;
+    portfelj->dionice[portfelj->brojDionica].kolicina = kolicina;
+    portfelj->brojDionica++;
+    *budzet -= dionica->cijena * kolicina;
+    printf("\nUspjesno ste kupili %d dionica %s.\n", kolicina, dionica->naziv);
+}
+void prodajDionicu(Portfelj* portfelj, Dionica* dionica, int kolicina, double* budzet) {
+    for (int i = 0; i < portfelj->brojDionica; i++) {
+        if (strcmp(portfelj->dionice[i].naziv, dionica->naziv) == 0) {
+            if (portfelj->dionice[i].kolicina < kolicina) {
+                printf("\nNemate dovoljno dionica za prodaju.\n");
+                return;
+            }
+            portfelj->dionice[i].kolicina -= kolicina;
+            *budzet += dionica->cijena * kolicina;
+            printf("\nUspjesno ste prodali %d dionica %s.\n", kolicina, dionica->naziv);
+            
+            if(portfelj->dionice[i].kolicina == 0) {
+                for(int j = i; j < portfelj->brojDionica - 1; j++) {
+                    portfelj->dionice[j] = portfelj->dionice[j + 1];
+                }
+                portfelj->brojDionica--;
+            }
+            return;
+        }
+    }
+    printf("\nNemate dionice %s u svom portfelju.\n", dionica->naziv);
+}
+Dionica* provjeriDionicu(Dionica* dionice, int brojDionica) {
+    char nazivDionice[50];
+    printf("\nUnesite naziv dionice koju zelite kupiti: ");
+    scanf("%s", nazivDionice);
+    for(int i = 0; i < brojDionica; i++) {
+        if(strcmp(dionice[i].naziv, nazivDionice) == 0) {
+            return &dionice[i];
+        }
+    }
+    printf("\nDionica koju zelite kupiti nije za prodaju.\n");
+    return NULL;
+}
+void depozit(Korisnik* korisnik, double iznos) {
+    if (iznos < 1 || iznos > 1000000) {
+        printf("Neispravan iznos za depozit. Iznos treba biti izmedju 1 i 1000000.\n");
+        return;
+    }
+    korisnik->budzet += iznos;
+    printf("\nDepozit je uspjesno dodan. Novi budzet iznosi %.2f EUR.\n", korisnik->budzet);
+}
+// Usporedna funkcija koja se koristi za sortiranje dionica
+int usporediDionicePoCijeni(const void* a, const void* b) {
+    Dionica* dionicaA = (Dionica*)a;
+    Dionica* dionicaB = (Dionica*)b;
+    if (dionicaA->cijena < dionicaB->cijena) return 1;
+    if (dionicaA->cijena > dionicaB->cijena) return -1;
+    return 0;
 }
 
-Korisnik* prijava() {
-	char ime[50];
-	char lozinka[50];
-
-	printf("Unesite ime: ");
-	scanf("%s", ime);
-	printf("Unesite lozinku: ");
-	scanf("%s", lozinka);
-
-	FILE* datoteka = fopen("korisnici.txt", "r");
-	if (datoteka == NULL) {
-		perror("Greska pri otvaranju datoteke korisnici.txt");
-		return NULL;
-	}
-
-	Korisnik korisnik;
-	while (fread(&korisnik, sizeof(Korisnik), 1, datoteka)) {
-		if (strcmp(ime, korisnik.ime) == 0 && strcmp(lozinka, korisnik.lozinka) == 0) {
-			printf("Uspjesno prijavljivanje.\n");
-			Korisnik* prijavljeniKorisnik = malloc(sizeof(Korisnik));
-			*prijavljeniKorisnik = korisnik;
-			fclose(datoteka);
-			return prijavljeniKorisnik;
-		}
-	}
-
-	printf("Korisnicko ime ili lozinka su netocni.\n");
-	fclose(datoteka);
-	return NULL;
+void sortirajPortfeljPoCijeni(Portfelj* portfelj) {
+    qsort(portfelj->dionice, portfelj->brojDionica, sizeof(Dionica), usporediDionicePoCijeni);
+}
+void sortirajPortfeljPoNazivu(Portfelj* portfelj) {
+    qsort(portfelj->dionice, portfelj->brojDionica, sizeof(Dionica), usporediDionicePoNazivuZaPretragu);
 }
 
+int usporediDionicePoNazivuZaPretragu(const void* a, const void* b) {
+    char* nazivDionice = (char*)a;
+    Dionica* dionica = (Dionica*)b;
+    return strcmp(nazivDionice, dionica->naziv);
+}
+
+Dionica* pretraziPortfelj(Portfelj* portfelj, char* nazivDionice) {
+    return (Dionica*)bsearch(nazivDionice, portfelj->dionice, portfelj->brojDionica, sizeof(Dionica), usporediDionicePoNazivuZaPretragu);
+}
+
+void ispisiPortfelj(Portfelj* portfelj) {
+    if (portfelj->brojDionica == 0) {
+        printf("\nPortfelj je prazan.\n");
+        return;
+    }
+
+    for (int i = 0; i < portfelj->brojDionica; i++) {
+        printf("\nNaziv dionice: %s, Cijena: %.2f, Kolicina: %d\n", portfelj->dionice[i].naziv, portfelj->dionice[i].cijena, portfelj->dionice[i].kolicina);
+    }
+}
+
+inline void obrisiDatotekuKorisnika(const char* imeDatoteke) {
+    if (remove(imeDatoteke) == 0) 
+        printf("Datoteka je uspjesno obrisana.\n");
+    else
+        printf("Greska prilikom brisanja datoteke.\n");
+}
 
