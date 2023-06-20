@@ -98,14 +98,16 @@ int main() {
                 if(prijavljen) {
                     printf("\nUspješno ste se odjavili");
                     prijavljen = false;
+                    registriran = false;
                 } else {
                     printf("\nMolim vas prijavite se prije odjavljivanja\n");
                 }
+                break;
             case 4:
                 if(prijavljen) {
                     prikaziIzbornik(korisnik, prijavljen, dionice, brojDionica);
                 } else {
-                    printf("\nMolim vas prvo se prijavite prije odabira ove opcije\n");
+                    printf("\nMolim vas prvo se prijavite prije korištenja ove opcije\n");
                 }
                 break;
             case 5:
@@ -224,5 +226,4 @@ void prikaziIzbornik(Korisnik* korisnik, bool prijavljen, Dionica* dionice, int 
         }
     } while (drugiIzbor != 8);
 }
-
 
